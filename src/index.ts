@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 
 const app = new Hono()
-const lista = ["bro", "dude"]
+const frutas = ["platano", "manzana"]
 app.get('/', (c) => c.text("Hola desde Hono"))
 app.post('/', async (c) => {
   const data = c.req.query("data")
@@ -16,18 +16,18 @@ app.post('/', async (c) => {
   const response = {data, frutas, body}
   return c.json(response)
 })
-app.get('/lista', (c) => {
+app.get('/frutas', (c) => {
   const query = Number(c.req.query("index"))
-  if(Number.isInteger(query) && query < lista.length) return c.json(lista[query])
-  return c.json(lista)
+  if(Number.isInteger(query) && query < frutas.length) return c.json(frutas[query])
+  return c.json(frutas)
 })
-app.post('/lista', async(c) => {
+app.post('/frutas', async(c) => {
   const body = await c.req.json()
-  if(body.data) {
-    lista.push(body.data)
-    return c.json(lista)
+  if(body.fruta) {
+    frutas.push(body.fruta)
+    return c.json(frutas)
   }
-  return c.text("No mandaste 'data'")
+  return c.text("No mandaste 'fruta'")
 })
 
 export default app
