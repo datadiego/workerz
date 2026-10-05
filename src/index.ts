@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 
-const app = new Hono()
-const frutas = ["platano", "manzana"]
+const app = new Hono<{ Bindings: CloudflareBindings }>()
+
 app.get('/', (c) => c.text("Hola desde Hono"))
 app.post('/', async (c) => {
   const data = c.req.query("data")
@@ -16,16 +16,21 @@ app.post('/', async (c) => {
   const response = {data, frutas, body}
   return c.json(response)
 })
-app.get('/frutas', (c) => {
-  const query = Number(c.req.query("index"))
-  if(Number.isInteger(query) && query < frutas.length) return c.json(frutas[query])
-  return c.json(frutas)
+app.get('/frutas', async (c) => {
+  const index = c.req.query("index")
+  if (index) {
+    const fruta = await c.env.DB.prepare('SELECT * FROM frutas WHERE id = ?').bind(Number(index)).first()
+    return c.json(fruta ?? {}, fruta ? 200 : 404)
+  }
+  const { results } = await c.env.DB.prepare('SELECT * FROM frutas ORDER BY id').bind().all()
+  return c.json(results)
 })
-app.post('/frutas', async(c) => {
+app.post('/frutas', async (c) => {
   const body = await c.req.json()
-  if(body.fruta) {
-    frutas.push(body.fruta)
-    return c.json(frutas)
+  if (body.fruta) {
+    await c.env.DB.prepare('INSERT INTO frutas (nombre) VALUES (?)').bind(body.fruta).run()
+    const { results } = await c.env.DB.prepare('SELECT * FROM frutas ORDER BY id').bind().all()
+    return c.json(results, 201)
   }
   return c.text("No mandaste 'fruta'")
 })
